@@ -1,6 +1,8 @@
 # GlassToasts
 Replaces Vista's ugly "balloon"popup with nice glassy ones
 
+![screenshot](http://www.aveapps.com/img/glasstoast.png)
+
 copyright (c) Andreas Verhoeven ave@aveapps.com, 2007.
 
 #LICENSE
