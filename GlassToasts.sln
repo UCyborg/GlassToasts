@@ -1,0 +1,39 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GlassToasts", "GlassToasts\GlassToasts.vcproj", "{171DB872-D97D-49C5-BBDB-E22FE715A631}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1BF02349-1476-4A24-89D3-07884CDED259} = {1BF02349-1476-4A24-89D3-07884CDED259}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TrayHook", "TrayHook\TrayHook.vcproj", "{1BF02349-1476-4A24-89D3-07884CDED259}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{171DB872-D97D-49C5-BBDB-E22FE715A631}.Debug|Win32.ActiveCfg = Debug|Win32
+		{171DB872-D97D-49C5-BBDB-E22FE715A631}.Debug|Win32.Build.0 = Debug|Win32
+		{171DB872-D97D-49C5-BBDB-E22FE715A631}.Debug|x64.ActiveCfg = Debug|x64
+		{171DB872-D97D-49C5-BBDB-E22FE715A631}.Debug|x64.Build.0 = Debug|x64
+		{171DB872-D97D-49C5-BBDB-E22FE715A631}.Release|Win32.ActiveCfg = Release|Win32
+		{171DB872-D97D-49C5-BBDB-E22FE715A631}.Release|Win32.Build.0 = Release|Win32
+		{171DB872-D97D-49C5-BBDB-E22FE715A631}.Release|x64.ActiveCfg = Release|x64
+		{171DB872-D97D-49C5-BBDB-E22FE715A631}.Release|x64.Build.0 = Release|x64
+		{1BF02349-1476-4A24-89D3-07884CDED259}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1BF02349-1476-4A24-89D3-07884CDED259}.Debug|Win32.Build.0 = Debug|Win32
+		{1BF02349-1476-4A24-89D3-07884CDED259}.Debug|x64.ActiveCfg = Debug|x64
+		{1BF02349-1476-4A24-89D3-07884CDED259}.Debug|x64.Build.0 = Debug|x64
+		{1BF02349-1476-4A24-89D3-07884CDED259}.Release|Win32.ActiveCfg = Release|Win32
+		{1BF02349-1476-4A24-89D3-07884CDED259}.Release|Win32.Build.0 = Release|Win32
+		{1BF02349-1476-4A24-89D3-07884CDED259}.Release|x64.ActiveCfg = Release|x64
+		{1BF02349-1476-4A24-89D3-07884CDED259}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
