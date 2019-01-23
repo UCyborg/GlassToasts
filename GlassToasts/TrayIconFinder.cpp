@@ -20,8 +20,8 @@ POINT TrayIconFinder::GetTrayIconPosition(HWND hwnd, UINT id)
 BOOL CALLBACK TrayIconFinder::FindTrayWnd(HWND hwnd, LPARAM lParam)
 {
 	TCHAR szClassName[256] = { 0 };
-	GetClassName(hwnd, szClassName, 255);    // Did we find the Main System Tray? If so, then get its size and quit
-	if (_tcscmp(szClassName, _T("TrayNotifyWnd")) == 0)
+	int i = GetClassName(hwnd, szClassName, 255);    // Did we find the Main System Tray? If so, then get its size and quit
+	if (i && !_tcscmp(szClassName, _T("TrayNotifyWnd")))
 	{
 		HWND* pWnd = (HWND*)lParam;
 		*pWnd = hwnd;
@@ -35,7 +35,7 @@ BOOL CALLBACK TrayIconFinder::FindToolBarInTrayWnd(HWND hwnd, LPARAM lParam)
 {
 	TCHAR szClassName[256] = { 0 };
 	GetClassName(hwnd, szClassName, 255);    // Did we find the Main System Tray? If so, then get its size and quit
-	if (_tcscmp(szClassName, _T("ToolbarWindow32")) == 0)
+	if (!_tcscmp(szClassName, _T("ToolbarWindow32")))
 	{
 		HWND* pWnd = (HWND*)lParam;
 		*pWnd = hwnd;
@@ -46,11 +46,10 @@ BOOL CALLBACK TrayIconFinder::FindToolBarInTrayWnd(HWND hwnd, LPARAM lParam)
 
 HWND TrayIconFinder::GetTrayNotifyWnd(BOOL a_bSeekForEmbedToolbar)
 {
-	HWND hWndTrayNotifyWnd = NULL;
-
 	HWND hWndShellTrayWnd = FindWindow(_T("Shell_TrayWnd"), NULL);
 	if (hWndShellTrayWnd)
 	{
+		HWND hWndTrayNotifyWnd = NULL;
 		EnumChildWindows(hWndShellTrayWnd, TrayIconFinder::FindTrayWnd, (LPARAM)&hWndTrayNotifyWnd);
 
 		if (hWndTrayNotifyWnd && IsWindow(hWndTrayNotifyWnd))
@@ -90,7 +89,7 @@ BOOL TrayIconFinder::FindOutPositionOfIconDirectly(const HWND a_hWndOwner, const
 {
 	//first of all let's find a Tool bar control embed in Tray window
 	HWND hWndTray = GetTrayNotifyWnd(TRUE);
-	if (hWndTray == NULL)
+	if (!hWndTray)
 	{
 		return FALSE;
 	}
@@ -104,7 +103,7 @@ BOOL TrayIconFinder::FindOutPositionOfIconDirectly(const HWND a_hWndOwner, const
 	}
 
 	HANDLE hTrayProc = OpenProcess(PROCESS_VM_OPERATION | PROCESS_VM_READ, FALSE, dwTrayProcessID);
-	if (hTrayProc == NULL)
+	if (!hTrayProc)
 	{
 		return FALSE;
 	}
@@ -112,8 +111,8 @@ BOOL TrayIconFinder::FindOutPositionOfIconDirectly(const HWND a_hWndOwner, const
 	//now we check how many buttons is there - should be more than 0
 	int iButtonsCount = (int)SendMessage(hWndTray, TB_BUTTONCOUNT, 0, 0);
 
-	//We want to get data from another process - it's not possible to just send messages like TB_GETBUTTON with a localy
-	//allocated buffer for return data. Pointer to localy allocated data has no usefull meaning in a context of another
+	//We want to get data from another process - it's not possible to just send messages like TB_GETBUTTON with a locally
+	//allocated buffer for return data. Pointer to locally allocated data has no useful meaning in a context of another
 	//process (since Win95) - so we need to allocate some memory inside Tray process.
 	//We allocate sizeof(TBBUTTON) bytes of memory - because TBBUTTON is the biggest structure we will fetch. But this buffer
 	//will be also used to get smaller pieces of data like RECT structures.
@@ -122,7 +121,7 @@ BOOL TrayIconFinder::FindOutPositionOfIconDirectly(const HWND a_hWndOwner, const
 	{
 		lpData = VirtualAllocEx(hTrayProc, NULL, sizeof(TBBUTTON), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
-		if (lpData == NULL)
+		if (!lpData)
 		{
 			CloseHandle(hTrayProc);
 			return FALSE;
@@ -142,14 +141,14 @@ BOOL TrayIconFinder::FindOutPositionOfIconDirectly(const HWND a_hWndOwner, const
 
 		TBBUTTON buttonData;
 		SendMessage(hWndTray, TB_GETBUTTON, iButton, (LPARAM)lpData);
-		if (ReadProcessMemory(hTrayProc, lpData, &buttonData, sizeof(TBBUTTON), NULL) == 0)
+		if (!ReadProcessMemory(hTrayProc, lpData, &buttonData, sizeof(TBBUTTON), NULL))
 		{
 			continue;
 		}
 
 		//now let's read extra data associated with each button: there will be a HWND of the window that created an icon and icon ID
 		DWORD dwExtraData[2];
-		if (ReadProcessMemory(hTrayProc, (LPVOID)buttonData.dwData, dwExtraData, sizeof(dwExtraData), NULL) == 0)
+		if (!ReadProcessMemory(hTrayProc, (LPVOID)buttonData.dwData, dwExtraData, sizeof(dwExtraData), NULL))
 		{
 			continue;
 		}
@@ -172,7 +171,7 @@ BOOL TrayIconFinder::FindOutPositionOfIconDirectly(const HWND a_hWndOwner, const
 		SendMessage(hWndTray, TB_GETITEMRECT, iButton, (LPARAM)lpData);
 
 		RECT rcPosition;
-		if (ReadProcessMemory(hTrayProc, lpData, &rcPosition, sizeof(RECT), NULL) == 0)
+		if (!ReadProcessMemory(hTrayProc, lpData, &rcPosition, sizeof(RECT), NULL))
 		{
 			continue;
 		}
@@ -184,9 +183,9 @@ BOOL TrayIconFinder::FindOutPositionOfIconDirectly(const HWND a_hWndOwner, const
 		break;
 	}
 
-	if (bIconFound == FALSE)
+	if (!bIconFound)
 	{
-		a_rcIcon = GetTrayWndRect(); //we failed to detect position of icon - let's return fail safe cooridinates of system tray
+		a_rcIcon = GetTrayWndRect(); //we failed to detect position of icon - let's return fail safe coordinates of system tray
 	}
 
 	VirtualFreeEx(hTrayProc, lpData, 0, MEM_RELEASE);

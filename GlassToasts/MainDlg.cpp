@@ -13,7 +13,7 @@ void getBalloonIcon(NOTIFYICONDATA32* data);
 BOOL HasDWM()
 {
 	BOOL bEnabled = FALSE;
-	if (dwmLib != FALSE)
+	if (dwmLib)
 	{
 		__try
 		{
@@ -40,29 +40,6 @@ struct BalloonOptions
 	BOOL startedPressOnOptions;
 	BOOL isPressed;
 };
-
-const float PI = 3.14159265f;
-
-ATOM MyRegisterClass(HINSTANCE hInstance)
-{
-	WNDCLASSEX wcex;
-
-	wcex.cbSize = sizeof(WNDCLASSEX);
-
-	wcex.style = 0;
-	wcex.lpfnWndProc = WndProc;
-	wcex.cbClsExtra = 0;
-	wcex.cbWndExtra = 0;
-	wcex.hInstance = hInstance;
-	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
-	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	wcex.lpszMenuName = NULL;//MAKEINTRESOURCE(IDC_GLASSTOAST);
-	wcex.lpszClassName = _T("AveGlassToolTips");
-	wcex.hIconSm = NULL;//LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-
-	return RegisterClassEx(&wcex);
-}
 
 void GetSkinName(TCHAR* skinName, DWORD nSize)
 {
@@ -149,93 +126,24 @@ COLORREF GetColor(const TCHAR* name, const TCHAR* key, COLORREF def)
 	return RGB(r, g, b);
 }
 
-void GlassToastThread(void* lpParameter)
+ATOM MyRegisterClass(HINSTANCE hInstance)
 {
-	NOTIFYICONDATA data = { 0 };
-	data.cbSize = NOTIFYICONDATA_V2_SIZE;
-	data.uFlags = NIF_INFO;
-	data.hWnd = (HWND)lpParameter;
-	data.uCallbackMessage = WM_TRAYCALLBACK;
-	_tcscpy_s(data.szInfoTitle, 64, _T("Ave's Glass Toasts"));
-	_tcscpy_s(data.szInfo, 256, _T("Ave's Glass Toasts has been started.\nClick here for additional options for Ave's Glass Toasts."));
-	Shell_NotifyIcon(NIM_MODIFY, &data);
-}
+	WNDCLASSEX wcex;
 
-LRESULT CMainDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
-{
-	balloonHwnd = NULL;
-	// center the dialog on the screen
-	CenterWindow();
+	wcex.cbSize = sizeof(WNDCLASSEX);
+	wcex.style = 0;
+	wcex.lpfnWndProc = WndProc;
+	wcex.cbClsExtra = 0;
+	wcex.cbWndExtra = 0;
+	wcex.hInstance = hInstance;
+	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+	wcex.lpszMenuName = NULL;//MAKEINTRESOURCE(IDC_GLASSTOAST);
+	wcex.lpszClassName = _T("AveGlassToolTips");
+	wcex.hIconSm = NULL;//LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
-	// set icons
-	HICON hIcon = (HICON)::LoadImage(_Module.GetResourceInstance(), MAKEINTRESOURCE(IDI_ICON1),
-		IMAGE_ICON, ::GetSystemMetrics(SM_CXICON), ::GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR);
-	SetIcon(hIcon, TRUE);
-	HICON hIconSmall = (HICON)::LoadImage(_Module.GetResourceInstance(), MAKEINTRESOURCE(IDI_ICON1),
-		IMAGE_ICON, ::GetSystemMetrics(SM_CXSMICON), ::GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
-	SetIcon(hIconSmall, FALSE);
-
-	hMod = NULL;
-	StartHook = NULL;
-	StopHook = NULL;
-	InitHookDLL(TRUE);
-
-	::EnableWindow(GetDlgItem(IDC_STOPHOOK), FALSE);
-	::EnableWindow(GetDlgItem(IDC_SHOWBALLOON), FALSE);
-
-	balloonAtom = MyRegisterClass(_Module.GetModuleInstance());
-
-	return TRUE;
-}
-
-LRESULT CMainDlg::OnTrayCallback(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
-{
-	if (NIN_BALLOONUSERCLICK == lParam)
-	{
-		ShowWindow(SW_SHOW);
-		SetFocus();
-	}
-
-	return 0;
-}
-
-LRESULT CMainDlg::OnAveAction(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
-{
-	if (1 == wParam)
-		OnBnClickedStophook(0, 0, 0, bHandled);
-	else if (2 == wParam)
-		DestroyWindow();
-	else if (3 == wParam)
-		ShowWindow(SW_SHOW);
-	return 0;
-}
-
-void CMainDlg::InitHookDLL(BOOL initDailog)
-{
-	if (hMod)
-	{
-		FreeLibrary(hMod);
-		MessageBox(_T("The hook DLL may be installed now."), _T("Information"), MB_OK | MB_ICONINFORMATION);
-	}
-	else if (!initDailog)
-	{
-		MessageBox(_T("The hook DLL may be installed now."), _T("Information"), MB_OK | MB_ICONINFORMATION);
-	}
-	TCHAR hookPath[MAX_PATH];
-	GetFilePath(hookPath, DLL_NAME, TRUE);
-	hMod = LoadLibrary(hookPath);
-	if (hMod != NULL)
-	{
-		StartHook		= (PStartHook)GetProcAddress(hMod, "StartHook");
-		StopHook		= (PStopHook)GetProcAddress(hMod, "StopHook");
-		if (!StartHook || !StopHook)
-		{
-			MessageBox(_T("Could not locate all reqired functions in hook DLL."), _T("Fatal error"), MB_OK | MB_ICONERROR);
-			return;
-		}
-		return;
-	}
-	MessageBox(_T("Could not load hook DLL."), _T("Fatal error"), MB_OK | MB_ICONERROR);
+	return RegisterClassEx(&wcex);
 }
 
 void CMainDlg::LoadSkins()
@@ -247,7 +155,7 @@ void CMainDlg::LoadSkins()
 
 	WIN32_FIND_DATA data;
 	HANDLE h = FindFirstFile(searchPath, &data);
-	if (INVALID_HANDLE_VALUE == h)
+	if (h == INVALID_HANDLE_VALUE)
 		return;
 
 	CComboBox box = GetDlgItem(IDC_SKINS);
@@ -255,8 +163,8 @@ void CMainDlg::LoadSkins()
 
 	do
 	{
-		if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY &&
-			_tcscmp(data.cFileName, _T(".")) != 0 && _tcscmp(data.cFileName, _T("..")) != 0)
+		if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY &&
+			_tcscmp(data.cFileName, _T(".")) && _tcscmp(data.cFileName, _T("..")))
 		{
 			box.AddString(data.cFileName);
 		}
@@ -270,37 +178,199 @@ void CMainDlg::LoadSkins()
 	box.SelectString(0, skinName);
 }
 
-LRESULT CMainDlg::OnWindowsPosChanged(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
+LRESULT CMainDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 {
-	WINDOWPOS* wp = reinterpret_cast<WINDOWPOS*>(lParam);
-	if (NULL == wp)
-		return 0;
+	// set icons
+	HICON hIcon = (HICON)::LoadImage(_Module.GetResourceInstance(), MAKEINTRESOURCE(IDI_ICON1),
+		IMAGE_ICON, ::GetSystemMetrics(SM_CXICON), ::GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR);
+	SetIcon(hIcon, TRUE);
+	HICON hIconSmall = (HICON)::LoadImage(_Module.GetResourceInstance(), MAKEINTRESOURCE(IDI_ICON1),
+		IMAGE_ICON, ::GetSystemMetrics(SM_CXSMICON), ::GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
+	SetIcon(hIconSmall, FALSE);
 
-	if (wp->flags & SWP_SHOWWINDOW)
+	LoadSkins();
+
+	balloonAtom = MyRegisterClass(_Module.GetModuleInstance());
+	balloonHwnd = NULL;
+
+	return TRUE;
+}
+
+LRESULT CMainDlg::OnTrayCallback(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
+{
+	if (lParam == NIN_BALLOONUSERCLICK)
 	{
-		LoadSkins();
+		ShowWindow(SW_SHOW);
+		SetForegroundWindow(m_hWnd);
 	}
 
 	return 0;
 }
 
+LRESULT CMainDlg::OnCopyData(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
+{
+	COPYDATASTRUCT* cds = reinterpret_cast<COPYDATASTRUCT*>(lParam);
+	if (!cds)
+		return 0;
+
+	if (cds->dwData != 1 || cds->cbData < NOTIFYICONDATA32_V2_SIZE + 8)
+		return 0;
+
+	TRAYNOTIFYDATA* data = reinterpret_cast<TRAYNOTIFYDATA*>(cds->lpData);
+	if (data && data->dwSignature == 0x34753423)
+	{
+		if (data->dwMessage <= NIM_MODIFY)
+		{
+			if (data->nid.uFlags & NIF_INFO)
+			{
+				if (!data->nid.szInfo || !_tcslen(data->nid.szInfo))
+				{
+					NOTIFYICONDATA32*curData = (NOTIFYICONDATA32*)GetProp(balloonHwnd, _T("data"));
+					if (curData && curData->dwWnd == data->nid.dwWnd && curData->uID == data->nid.uID)
+					{
+						::PostMessage(balloonHwnd, WM_CLOSE, 0, 0);
+					}
+				}
+				else
+				{
+					//::MessageBox(0, _T("we got a balloon.. part 2"), 0, 0);
+					NOTIFYICONDATA32 *buf = (NOTIFYICONDATA32*)LocalAlloc(LPTR, sizeof(NOTIFYICONDATA32));
+					if (buf)
+					{
+						memcpy(buf, &data->nid, data->nid.cbSize <= sizeof(NOTIFYICONDATA32) ? data->nid.cbSize : sizeof(NOTIFYICONDATA32));
+						getBalloonIcon(buf);
+						queuedBalloons.push(buf);
+						if (!balloonHwnd)
+							PostMessage(WM_APP_BYE);
+					}
+				}
+				DWORD test = data->nid.uFlags &= ~(NIF_INFO | NIF_REALTIME);
+
+				if (test)
+					return 2;
+				return 1;
+			}
+		}
+
+		//::MessageBox(0, _T("balloon entered queue"), 0,0);
+	}
+
+	return 0;
+}
+
+LRESULT CMainDlg::OnAveAction(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled)
+{
+	if (wParam == 1)
+		OnBnClickedStophook(0, 0, NULL, bHandled);
+	else if (wParam == 2)
+		DestroyWindow();
+	else if (wParam == 3)
+	{
+		ShowWindow(SW_SHOW);
+		SetForegroundWindow(m_hWnd);
+	}
+	return 0;
+}
+
+LRESULT CMainDlg::OnBalloonFinished(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+{
+	balloonHwnd = NULL;
+	if (!queuedBalloons.empty())
+	{
+		NOTIFYICONDATA32* buf = queuedBalloons.front();
+		queuedBalloons.pop();
+		ShowBalloonTip(buf);
+		if (buf->dwBalloonIcon && !(buf->dwInfoFlags & (NIIF_INFO | NIIF_WARNING | NIIF_ERROR)))
+			DestroyIcon((HICON)buf->dwBalloonIcon);
+		LocalFree(buf);
+	}
+	return 0;
+}
+
+LRESULT CMainDlg::OnTrayCrashed(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+{
+	isTimerActive = (BOOL)SetTimer(1, 2500, NULL);
+	isHookRunning = FALSE;
+	::EnableWindow(GetDlgItem(IDC_STARTHOOK), !isHookRunning);
+	::EnableWindow(GetDlgItem(IDC_STOPHOOK), isHookRunning);
+	::EnableWindow(GetDlgItem(IDC_SHOWBALLOON), isHookRunning);
+
+	return 0;
+}
+
+LRESULT CMainDlg::OnTimer(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+{
+	if (!isHookRunning)
+	{
+		isHookRunning = StartHook(m_hWnd);
+		if (isHookRunning)
+		{
+			KillTimer(1);
+			isTimerActive = FALSE;
+			::EnableWindow(GetDlgItem(IDC_STARTHOOK), !isHookRunning);
+			::EnableWindow(GetDlgItem(IDC_STOPHOOK), isHookRunning);
+			::EnableWindow(GetDlgItem(IDC_SHOWBALLOON), isHookRunning);
+		}
+	}
+
+	return 0;
+}
+
+LRESULT CMainDlg::OnClose(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+{
+	ShowWindow(SW_HIDE);
+
+	return 0;
+}
+
+LRESULT CMainDlg::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+{
+	StopHook();
+
+	if (balloonHwnd)
+		::DestroyWindow(balloonHwnd);
+	if (balloonAtom)
+		UnregisterClass((LPCTSTR)balloonAtom, _Module.GetModuleInstance());
+
+	PostQuitMessage(EXIT_SUCCESS);
+
+	return 0;
+}
+
+LRESULT CMainDlg::OnEndSession(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+{
+	if (wParam)
+		DestroyWindow();
+
+	return 0;
+}
+
+void GlassToastThread(void* lpParameter)
+{
+	NOTIFYICONDATA data = { 0 };
+	data.cbSize = NOTIFYICONDATA_V2_SIZE;
+	data.uFlags = NIF_INFO;
+	data.hWnd = (HWND)lpParameter;
+	data.uCallbackMessage = WM_TRAYCALLBACK;
+	_tcscpy_s(data.szInfoTitle, 64, _T("Ave's Glass Toasts"));
+	_tcscpy_s(data.szInfo, 256, _T("Ave's Glass Toasts has been started.\nClick here for additional options for Ave's Glass Toasts."));
+	Shell_NotifyIcon(NIM_MODIFY, &data);
+}
+
 LRESULT CMainDlg::OnBnClickedStarthook(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
-	if (StartHook && StopHook)
+	if (isTimerActive)
 	{
-retry:
-		isHookRunning = StartHook(hMod, m_hWnd);
+		KillTimer(1);
+		isTimerActive = FALSE;
+	}
+
+	isHookRunning = StartHook(m_hWnd);
+	if (isHookRunning)
+	{
 		::EnableWindow(GetDlgItem(IDC_STARTHOOK), !isHookRunning);
 		::EnableWindow(GetDlgItem(IDC_STOPHOOK), isHookRunning);
 		::EnableWindow(GetDlgItem(IDC_SHOWBALLOON), isHookRunning);
-	}
-	else
-	{
-		InitHookDLL(FALSE);
-		if (StartHook)
-			goto retry;
-		else
-			return 0;
 	}
 
 	if (isHookRunning && showStartPopup)
@@ -311,84 +381,77 @@ retry:
 
 LRESULT CMainDlg::OnBnClickedStophook(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
-	if (StopHook && StartHook)
-	{
-retry:
-		isHookRunning = !StopHook();
-		::EnableWindow(GetDlgItem(IDC_STARTHOOK), !isHookRunning);
-		::EnableWindow(GetDlgItem(IDC_STOPHOOK), isHookRunning);
-		::EnableWindow(GetDlgItem(IDC_SHOWBALLOON), isHookRunning);
-	}
-	else
-	{
-		InitHookDLL(FALSE);
-		if (StopHook)
-			goto retry;
-		else
-			return 0;
-	}
+	StopHook();
+	isHookRunning = FALSE;
+	::EnableWindow(GetDlgItem(IDC_STARTHOOK), !isHookRunning);
+	::EnableWindow(GetDlgItem(IDC_STOPHOOK), isHookRunning);
+	::EnableWindow(GetDlgItem(IDC_SHOWBALLOON), isHookRunning);
 
 	return 0;
 }
 
-LRESULT CMainDlg::OnClose(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
+void TestThread(void* lpParameter)
 {
-	ShowWindow(SW_HIDE);
+	TCHAR name[MAX_PATH];
+	GetStringValue(_T("info"), _T("author"), _T("unknown"), name, MAX_PATH);
+	NOTIFYICONDATA data = { 0 };
+	data.cbSize = NOTIFYICONDATA_V2_SIZE;
+	data.uFlags = NIF_INFO;
+	data.dwInfoFlags = NIIF_INFO;
+	data.hWnd = (HWND)lpParameter;
+	data.uCallbackMessage = WM_TRAYCALLBACK;
+	_tcscpy_s(data.szInfoTitle, 64, _T("Ave's Glass Toasts"));
+	_tcscpy_s(data.szInfo, 256, _T("Thank you for choosing Ave's Glass Toasts.\nCode by Andreas Verhoeven,\nGraphics by "));
+	_tcscat_s(data.szInfo, 256, name);
+	_tcscat_s(data.szInfo, 256, _T("."));
+	Shell_NotifyIcon(NIM_MODIFY, &data);
+}
+
+LRESULT CMainDlg::OnBnClickedShowballoon(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
+{
+	_beginthread(TestThread, 0, (void*)m_hWnd);
 
 	return 0;
 }
 
-LRESULT CMainDlg::OnCopyData(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
+LRESULT CMainDlg::OnCbnSelchangeSkins(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
-	COPYDATASTRUCT* cds = reinterpret_cast<COPYDATASTRUCT*>(lParam);
-	if (NULL == cds)
-		return 0;
+	TCHAR newSkinName[MAX_PATH];
+	CComboBox box = GetDlgItem(IDC_SKINS);
+	int sel = box.GetCurSel();
+	box.GetLBText(sel, newSkinName);
 
-	if (cds->dwData != 1 || cds->cbData < NOTIFYICONDATA32_V2_SIZE + 8)
-		return 0;
+	WriteSkinName(newSkinName);
 
-	TRAYNOTIFYDATA* data = reinterpret_cast<TRAYNOTIFYDATA*>(cds->lpData);
-	if (data != NULL && data->dwSignature == 0x34753423 && data->nid.uFlags & NIF_INFO)
-	{
-		if (NULL == data->nid.szInfo || 0 == _tcslen(data->nid.szInfo))
-		{
-			if (balloonHwnd != NULL)
-			{
-				NOTIFYICONDATA32*curData = (NOTIFYICONDATA32*)GetProp(balloonHwnd, _T("data"));
-				if (curData != NULL && curData->dwWnd == data->nid.dwWnd && curData->uID == data->nid.uID)
-				{
-					::PostMessage(balloonHwnd, WM_CLOSE, 0, 0);
-				}
-			}
-		}
-		else
-		{
-			//::MessageBox(0, _T("we got a balloon.. part 2"), 0, 0);
-			NOTIFYICONDATA32 *buf = (NOTIFYICONDATA32*)LocalAlloc(LPTR, sizeof(NOTIFYICONDATA32));
-			if (NULL == buf)
-				return 1;
-			memcpy(buf, &data->nid, data->nid.cbSize == sizeof(NOTIFYICONDATA32) ? data->nid.cbSize : sizeof(NOTIFYICONDATA32));
-			getBalloonIcon(buf);
-			queuedBalloons.push(buf);
-			if (balloonHwnd == NULL)
-				PostMessage(WM_APP_BYE);
-		}
+	if (balloonHwnd)
+		::DestroyWindow(balloonHwnd);
 
-		//::MessageBox(0, _T("balloon entered queue"), 0,0);
+	_beginthread(TestThread, 0, (void*)m_hWnd);
 
-		return 1;
-	}
+	return 0;
+}
+
+LRESULT CMainDlg::OnBnClickedRefresh(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
+{
+	LoadSkins();
+
+	return 0;
+}
+
+LRESULT CMainDlg::OnBnClickedHidedlg(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
+{
+	DestroyWindow();
 
 	return 0;
 }
 
 BOOL SetLayeredAlpha(HWND hwnd, BYTE alpha)
 {
-	if (NULL == hwnd)
+	if (!hwnd)
 		return FALSE;
 
 	float progress = float(alpha) / 255.0f;
-	float cur = sin(progress * PI / 2.0f);
+	float cur = sinf(progress * M_PI / 2.0f);
 	BYTE correctedAlpha = (BYTE)(cur * 255.0f);
 
 	BLENDFUNCTION bf;
@@ -401,12 +464,12 @@ BOOL SetLayeredAlpha(HWND hwnd, BYTE alpha)
 
 BOOL SetLayeredWindow(HWND hwnd, Bitmap* bmp, BYTE alpha = 255)
 {
-	if (NULL == bmp || NULL == hwnd)
+	if (!hwnd || !bmp)
 		return FALSE;
 
 	HBITMAP hbmp = NULL;
 	bmp->GetHBITMAP(NULL, &hbmp);
-	if (NULL == hbmp)
+	if (!hbmp)
 		return FALSE;
 
 	SIZE s = { bmp->GetWidth(), bmp->GetHeight() };
@@ -431,7 +494,7 @@ BOOL SetLayeredWindow(HWND hwnd, Bitmap* bmp, BYTE alpha = 255)
 
 BOOL SetLayeredWindowHBitmap(HWND hwnd, HBITMAP hbmp, SIZE s, BYTE alpha = 255)
 {
-	if (NULL == hbmp || NULL == hwnd)
+	if (!hwnd || !hbmp)
 		return FALSE;
 
 	POINT pt = { 0, 0 };
@@ -466,7 +529,7 @@ HRESULT EnableBlurBehindWindow(HWND window,
 	blurBehind.fEnable = enable;
 	blurBehind.fTransitionOnMaximized = transitionOnMaximized;
 
-	if (enable && NULL != region)
+	if (enable && region)
 	{
 		blurBehind.dwFlags |= DWM_BB_BLURREGION;
 		blurBehind.hRgnBlur = region;
@@ -574,12 +637,11 @@ HBITMAP paintBalloon(NOTIFYICONDATA32* data, SIZE* size, Rect* closeRc, Rect* op
 	RECT rcText = { textl - fixX, textt, textl + width - fixX, height + textt - fixY };
 	//rcText = r;
 
-	if (size != NULL)
+	if (size)
 		*size = s;
 
 
 	BITMAPINFO dib = { 0 };
-	HBITMAP hbmp = NULL;
 	dib.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 	dib.bmiHeader.biWidth = s.cx;
 	dib.bmiHeader.biHeight = -s.cy;
@@ -587,7 +649,7 @@ HBITMAP paintBalloon(NOTIFYICONDATA32* data, SIZE* size, Rect* closeRc, Rect* op
 	dib.bmiHeader.biBitCount = 32;
 	dib.bmiHeader.biCompression = BI_RGB;
 
-	hbmp = CreateDIBSection(dc, &dib, DIB_RGB_COLORS, NULL, NULL, 0);
+	HBITMAP hbmp = CreateDIBSection(dc, &dib, DIB_RGB_COLORS, NULL, NULL, 0);
 
 
 	HBITMAP old = (HBITMAP)SelectObject(dc, hbmp);
@@ -615,7 +677,7 @@ HBITMAP paintBalloon(NOTIFYICONDATA32* data, SIZE* size, Rect* closeRc, Rect* op
 	g.DrawImage(&bmp3, rcClose,
 		0, 0, bmp3.GetWidth(), bmp3.GetHeight(), UnitPixel, 0, 0, 0);
 
-	if (closeRc != NULL)
+	if (closeRc)
 		*closeRc = rcClose;
 
 	int headerl = GetOffsetValue(_T("header"), _T("left"), 54);
@@ -696,19 +758,19 @@ HBITMAP paintBalloon(NOTIFYICONDATA32* data, SIZE* size, Rect* closeRc, Rect* op
 	int optionst = GetOffsetValue(_T("options"), _T("top"), 4);
 
 	Rect rcOptions(s.cx - bmp3.GetWidth() - optionslo - bmpOptions.GetWidth() - fixX, optionst - fixY, bmpOptions.GetWidth(), bmpOptions.GetHeight());
-	if (optionsRc != NULL)
+	if (optionsRc)
 		*optionsRc = rcOptions;
 
 	BalloonOptions* opts = (BalloonOptions*)GetProp(hwnd, _T("options"));
-	if (opts != NULL && (opts->mouseIsOn || opts->ncmouseIsOn) || GetProp(hwnd, _T("menuactive")))
+	if (opts && (opts->mouseIsOn || opts->ncmouseIsOn) || GetProp(hwnd, _T("menuactive")))
 		g.DrawImage(&bmpOptions, rcOptions, 0, 0, bmpOptions.GetWidth(), bmpOptions.GetHeight(), UnitPixel, 0, 0, 0);
 
 	int iconl = GetOffsetValue(_T("icon"), _T("left"), 14);
 	int icont = GetOffsetValue(_T("icon"), _T("top"), -1);
-	if (-1 == icont)
+	if (icont == -1)
 		icont = s.cy / 2 - 16;
 
-	if (data->dwBalloonIcon != 0)
+	if (data->dwBalloonIcon)
 	{
 		DrawIcon(dc, iconl, icont, (HICON)data->dwBalloonIcon);
 
@@ -718,7 +780,6 @@ HBITMAP paintBalloon(NOTIFYICONDATA32* data, SIZE* size, Rect* closeRc, Rect* op
 			int reflectionalpha = GetOffsetValue(_T("icon"), _T("reflectionalpha"), 150);
 			HDC iconDC = CreateCompatibleDC(0);
 			BITMAPINFO dib = { 0 };
-			HBITMAP iconBmp = 0;
 			dib.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 			dib.bmiHeader.biWidth = 32;
 			dib.bmiHeader.biHeight = 32;
@@ -726,17 +787,17 @@ HBITMAP paintBalloon(NOTIFYICONDATA32* data, SIZE* size, Rect* closeRc, Rect* op
 			dib.bmiHeader.biBitCount = 32;
 			dib.bmiHeader.biCompression = BI_RGB;
 
-			iconBmp = CreateDIBSection(dc, &dib, DIB_RGB_COLORS, NULL, NULL, 0);
+			HBITMAP iconBmp = CreateDIBSection(dc, &dib, DIB_RGB_COLORS, NULL, NULL, 0);
 			HBITMAP old = (HBITMAP)SelectObject(iconDC, iconBmp);
 			DrawIcon(iconDC, 0, 0, (HICON)data->dwBalloonIcon);
 
-			BYTE data[32 * 32 * 4] = { 0 };
+			BYTE data[32 * 32 * 4];
 			LPBYTE ptr = data;
 			BYTE data2[32 * 32 * 4];
 			LPBYTE ptr2 = data2;
 			LPBYTE optr = (&ptr2[0]) + 32 * 32 * 4;
 			LPBYTE endptr = (&ptr2[0]) + 32 * 32 * 4;
-			GetBitmapBits(iconBmp, 32 * 32 * 4, (LPVOID)ptr);
+			GetDIBits(iconDC, iconBmp, 0, 32, (LPVOID)ptr, &dib, DIB_RGB_COLORS);
 			int alphaCalc = 0;
 			for (int y = 0; y < 32; ++y)
 			{
@@ -753,8 +814,6 @@ HBITMAP paintBalloon(NOTIFYICONDATA32* data, SIZE* size, Rect* closeRc, Rect* op
 				}
 				for (int x = 0; x < 32; ++x)
 				{
-
-
 					int a = *ptr++;
 					int r = *ptr++;
 					int g = *ptr++;
@@ -779,7 +838,7 @@ HBITMAP paintBalloon(NOTIFYICONDATA32* data, SIZE* size, Rect* closeRc, Rect* op
 				}
 			}
 
-			SetBitmapBits(iconBmp, 32 * 32 * 4, (LPVOID)ptr2);
+			SetDIBits(iconDC, iconBmp, 0, 32, (LPVOID)ptr2, &dib, DIB_RGB_COLORS);
 
 			BLENDFUNCTION bf;
 			bf.BlendOp = AC_SRC_OVER;
@@ -853,21 +912,6 @@ HRGN CreateRegionFromMask(SIZE s)
 	return region;
 }
 
-LRESULT CMainDlg::OnBalloonFinished(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
-{
-	balloonHwnd = NULL;
-	if (!queuedBalloons.empty())
-	{
-		NOTIFYICONDATA32* buf = queuedBalloons.front();
-		queuedBalloons.pop();
-		ShowBalloonTip(buf);
-		if (buf->dwBalloonIcon != 0)
-			DestroyIcon((HICON)buf->dwBalloonIcon);
-		LocalFree(buf);
-	}
-	return 0;
-}
-
 HICON WINAPI _GetWindowIcon(HWND hwnd)
 {
 	if (!IsWindow(hwnd))
@@ -881,7 +925,7 @@ HICON WINAPI _GetWindowIcon(HWND hwnd)
 
 void getBalloonIcon(NOTIFYICONDATA32* data)
 {
-	if (data->dwBalloonIcon != 0)
+	if (data->dwBalloonIcon)
 		data->dwBalloonIcon = (DWORD)CopyIcon((HICON)data->dwBalloonIcon);
 	else
 	{
@@ -893,18 +937,16 @@ void getBalloonIcon(NOTIFYICONDATA32* data)
 			data->dwBalloonIcon = (DWORD)LoadIcon(NULL, IDI_WARNING);
 		else if ((data->dwInfoFlags & NIIF_USER) == NIIF_USER)
 			data->dwBalloonIcon = (DWORD)CopyIcon((HICON)data->dwIcon);
-
-		data->dwInfoFlags = 0;
 	}
 
-	if (0 == data->dwBalloonIcon)
+	if (!data->dwBalloonIcon)
 	{
 		HICON hIcon = _GetWindowIcon((HWND)data->dwWnd);
-		if (hIcon != NULL)
+		if (hIcon)
 			data->dwBalloonIcon = (DWORD)CopyIcon(hIcon);
 	}
 
-	if (9 == data->dwBalloonIcon)
+	if (!data->dwBalloonIcon)
 	{
 		DWORD pid = 0;
 		GetWindowThreadProcessId((HWND)data->dwWnd, &pid);
@@ -913,15 +955,13 @@ void getBalloonIcon(NOTIFYICONDATA32* data)
 			HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
 				FALSE, pid);
 
-			if (hProcess != NULL)
+			if (hProcess)
 			{
 				TCHAR exePath[MAX_PATH];
-				GetModuleFileNameEx(hProcess, NULL, exePath, MAX_PATH);
-				if (_tcslen(exePath) > 0)
+				if (GetModuleFileNameEx(hProcess, NULL, exePath, MAX_PATH))
 				{
 					SHFILEINFO info;
-					SHGetFileInfo(exePath, 0, &info, sizeof(info), SHGFI_ICON | SHGFI_LARGEICON);
-					if (info.hIcon != NULL)
+					if (SHGetFileInfo(exePath, 0, &info, sizeof(info), SHGFI_ICON | SHGFI_LARGEICON))
 						data->dwBalloonIcon = (DWORD)info.hIcon;
 				}
 
@@ -930,24 +970,24 @@ void getBalloonIcon(NOTIFYICONDATA32* data)
 		}
 	}
 
-	if (data->dwBalloonIcon == 0)
+	if (!data->dwBalloonIcon)
 		data->dwBalloonIcon = (DWORD)LoadIcon(NULL, IDI_WINLOGO);
 }
 
 void CMainDlg::ShowBalloonTip(NOTIFYICONDATA32* data)
 {
-	if (NULL == data)
+	if (!data)
 		return;
 
 
 	BalloonOptions* opts = (BalloonOptions*)LocalAlloc(LPTR, sizeof(BalloonOptions));
-	if (NULL == opts)
+	if (!opts)
 		return;
 
 	HWND hwnd = CreateWindowEx(WS_EX_TOOLWINDOW | WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_NOACTIVATE,
 		_T("AveGlassToolTips"), _T(""), WS_POPUP,
 		0, 0, 220, 70, NULL, NULL, _Module.GetModuleInstance(), NULL);
-	if (NULL == hwnd)
+	if (!hwnd)
 	{
 		LocalFree(opts);
 		return;
@@ -989,7 +1029,7 @@ void CMainDlg::ShowBalloonTip(NOTIFYICONDATA32* data)
 	HWND tray = FindWindow(_T("Shell_TrayWnd"), NULL);
 	int t = 100;
 	int l = 100;
-	if (tray != NULL)
+	if (tray)
 	{
 		RECT rc;
 		::GetWindowRect(tray, &rc);
@@ -1103,7 +1143,7 @@ void checkOptionsButton(HWND hWnd, LPARAM lParam, BYTE alpha, UINT msg, BOOL lea
 	else if (msg == WM_LBUTTONDOWN && PtInRect(&rc, pt))
 		newOptionsState = 8;
 
-	if (GetProp(hWnd, _T("menuactive")) != NULL)
+	if (GetProp(hWnd, _T("menuactive")))
 		newOptionsState = 8;
 
 	if (prevOptionsState != newOptionsState || leaving || visiting)
@@ -1143,10 +1183,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_DESTROY:
 	{
 		NOTIFYICONDATA32* data = (NOTIFYICONDATA32*)GetProp(hWnd, _T("data"));
-		if (data->dwBalloonIcon != 0)
+		if (data->dwBalloonIcon && !(data->dwInfoFlags & (NIIF_INFO | NIIF_WARNING | NIIF_ERROR)))
 			DestroyIcon((HICON)data->dwBalloonIcon);
 
-		LocalFree((HLOCAL)GetProp(hWnd, _T("data")));
+		LocalFree((HLOCAL)data);
 		LocalFree((HLOCAL)GetProp(hWnd, _T("options")));
 		DeleteObject((HRGN)GetProp(hWnd, _T("region")));
 		PostMessage((HWND)GetProp(hWnd, _T("parent")), WM_APP_BYE, 0, 0);
@@ -1156,7 +1196,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	case WM_TIMER:
 	{
-		if (1 == wParam)
+		if (wParam == 1)
 		{
 			opts->fadingIn = TRUE;
 			SetLayeredAlpha(hWnd, opts->alpha);
@@ -1171,7 +1211,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					SetTimer(hWnd, 2, (DWORD)3000, NULL);
 			}
 		}
-		else if (2 == wParam)
+		else if (wParam == 2)
 		{
 			if (GetProp(hWnd, _T("menuactive")) == NULL)
 			{
@@ -1179,7 +1219,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				SetTimer(hWnd, 3, ((UINT)GetProp(hWnd, _T("timeout")) - 3000) / 255, NULL);
 			}
 		}
-		else if (3 == wParam)
+		else if (wParam == 3)
 		{
 			SetLayeredAlpha(hWnd, opts->alpha);
 
@@ -1355,77 +1395,5 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}
 
 	}
-	return 0;
-}
-
-void TestThread(void* lpParameter)
-{
-	TCHAR name[MAX_PATH];
-	GetStringValue(_T("info"), _T("author"), _T("unknown"), name, MAX_PATH);
-	NOTIFYICONDATA data = { 0 };
-	data.cbSize = NOTIFYICONDATA_V2_SIZE;
-	data.uFlags = NIF_INFO;
-	data.dwInfoFlags = NIIF_INFO;
-	_tcscpy_s(data.szInfoTitle, 64, _T("Ave's Glass Toasts"));
-	_tcscpy_s(data.szInfo, 256, _T("Thank you for choosing Ave's Glass Toasts.\nCode by Andreas Verhoeven,\nGraphics by "));
-	_tcscat_s(data.szInfo, 256, name);
-	_tcscat_s(data.szInfo, 256, _T("."));
-	Shell_NotifyIcon(NIM_MODIFY, &data);
-}
-
-LRESULT CMainDlg::OnBnClickedShowballoon(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
-{
-	_beginthread(TestThread, 0, NULL);
-
-	return 0;
-}
-
-LRESULT CMainDlg::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
-{
-	if (StopHook)
-		StopHook();
-
-	if (hMod != NULL)
-		FreeLibrary(hMod);
-
-	if (balloonHwnd != NULL)
-		::DestroyWindow(balloonHwnd);
-	if (balloonAtom != NULL)
-		UnregisterClass((LPCTSTR)balloonAtom, _Module.GetModuleInstance());
-
-	PostQuitMessage(EXIT_SUCCESS);
-
-	return 0;
-}
-
-LRESULT CMainDlg::OnEndSession(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/)
-{
-	if (wParam != FALSE)
-		DestroyWindow();
-
-	return 0;
-}
-
-LRESULT CMainDlg::OnBnClickedHidedlg(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
-{
-	DestroyWindow();
-
-	return 0;
-}
-
-LRESULT CMainDlg::OnCbnSelchangeSkins(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
-{
-	TCHAR newSkinName[MAX_PATH];
-	CComboBox box = GetDlgItem(IDC_SKINS);
-	int sel = box.GetCurSel();
-	box.GetLBText(sel, newSkinName);
-
-	WriteSkinName(newSkinName);
-
-	if (balloonHwnd != NULL)
-		::DestroyWindow(balloonHwnd);
-
-	_beginthread(TestThread, 0, NULL);
-
 	return 0;
 }
